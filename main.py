@@ -1,4 +1,4 @@
-# --- download_worker.py ---
+# --- downloadworker---
 
 import os
 import re
@@ -432,15 +432,15 @@ class ByteStreamer:
                             elif isinstance(old_qualities, dict):
                                 new_qualities = old_qualities.copy()
                                 for quality, identifier in old_qualities.items():
-                                     current_id = identifier if isinstance(identifier, int) else identifier.get('id') # check old/new format
-                                     if current_id == original_message_id:
-                                         # Update based on format found
-                                         if isinstance(identifier, int):
-                                             new_qualities[quality] = refreshed_msg.id
-                                         elif isinstance(identifier, dict):
-                                             new_qualities[quality]['id'] = refreshed_msg.id
-                                         found_and_updated = True
-                                         break # Assuming only one match per quality dict
+                                    current_id = identifier if isinstance(identifier, int) else identifier.get('id') # check old/new format
+                                    if current_id == original_message_id:
+                                        # Update based on format found
+                                        if isinstance(identifier, int):
+                                            new_qualities[quality] = refreshed_msg.id
+                                        elif isinstance(identifier, dict):
+                                            new_qualities[quality]['id'] = refreshed_msg.id
+                                        found_and_updated = True
+                                        break # Assuming only one match per quality dict
 
                             if found_and_updated:
                                 await update_media_links_in_db(post_id, new_qualities, media_doc.get('stream_link', '')) # Use the existing stream link
@@ -581,12 +581,12 @@ async def download_handler(request: web.Request):
             try:
                 range_spec = range_header.replace("bytes=", "")
                 if "-" in range_spec:
-                     start, end = range_spec.split("-", 1)
-                     from_bytes = int(start) if start else 0
-                     to_bytes = int(end) if end else file_size - 1
+                    start, end = range_spec.split("-", 1)
+                    from_bytes = int(start) if start else 0
+                    to_bytes = int(end) if end else file_size - 1
                 else: # e.g., bytes=500 (uncommon)
-                     from_bytes = int(range_spec)
-                     to_bytes = from_bytes
+                    from_bytes = int(range_spec)
+                    to_bytes = from_bytes
             except ValueError:
                  LOGGER.warning(f"Invalid Range values for {message_id}: {range_header}")
                  return web.Response(status=400, text="Invalid Range values")
@@ -632,19 +632,19 @@ async def download_handler(request: web.Request):
         try:
             async for chunk in body_generator:
                 if bytes_sent_in_current_request >= length:
-                     LOGGER.debug(f"Finished sending range for {message_id}. Sent: {bytes_sent_in_current_request}, Requested length: {length}")
-                     break # Stop if we've sent the requested number of bytes
+                    LOGGER.debug(f"Finished sending range for {message_id}. Sent: {bytes_sent_in_current_request}, Requested length: {length}")
+                    break # Stop if we've sent the requested number of bytes
 
                 data_to_write = chunk
                 # Discard beginning part of the first chunk if needed
                 if is_first_chunk_yielded and first_part_cut > 0:
-                     data_to_write = chunk[first_part_cut:]
-                     is_first_chunk_yielded = False
+                    data_to_write = chunk[first_part_cut:]
+                    is_first_chunk_yielded = False
 
                 # Ensure we don't send more bytes than requested in the range
                 remaining_bytes_in_request = length - bytes_sent_in_current_request
                 if len(data_to_write) > remaining_bytes_in_request:
-                     data_to_write = data_to_write[:remaining_bytes_in_request]
+                    data_to_write = data_to_write[:remaining_bytes_in_request]
 
                 # Write the (potentially modified) chunk to the client
                 await resp.write(data_to_write)
@@ -673,24 +673,28 @@ async def download_handler(request: web.Request):
             # Best effort: log it. The client download will likely fail.
             # Consider if a different status/message could be sent before await resp.prepare?
             # For now, just raise to be caught by the outer handler if headers not sent.
-             if not resp.prepared:
-                 return web.Response(status=410, text="Download link expired, please generate a new link.")
-             else:
-                 # Headers sent, can't change status code. Client download will just fail.
-                  LOGGER.error(f"Cannot send 410, headers already prepared for {message_id}")
-                  return # Stop processing
+            
+            # --- FIX 1: Indentation corrected below ---
+            if not resp.prepared:
+                return web.Response(status=410, text="Download link expired, please generate a new link.")
+            else:
+                # Headers sent, can't change status code. Client download will just fail.
+                LOGGER.error(f"Cannot send 410, headers already prepared for {message_id}")
+                return # Stop processing
 
         except Exception as e:
             # Catch any other unexpected errors during streaming
             LOGGER.critical(f"Unhandled error during download stream for {message_id}: {e}", exc_info=True)
             stream_errors += 1
-             # If headers haven't been sent, we can return a 500 error
+            
+            # --- FIX 2: Indentation corrected below ---
+            # If headers haven't been sent, we can return a 500 error
             if not resp.prepared:
-                 return web.Response(status=500, text="Internal Server Error during download")
+                return web.Response(status=500, text="Internal Server Error during download")
             else:
-                 # Headers sent, can't change status code. Client download will fail.
-                  LOGGER.error(f"Cannot send 500, headers already prepared for {message_id}")
-                  return # Stop processing
+                # Headers sent, can't change status code. Client download will fail.
+                LOGGER.error(f"Cannot send 500, headers already prepared for {message_id}")
+                return # Stop processing
 
         finally:
              # Ensure workload is decremented even if errors occur
@@ -923,7 +927,7 @@ async def restart_confirm_callback_admin(client, cb: CallbackQuery):
         # Stop all clients managed by this worker
         for client_instance in multi_clients.values():
             if client_instance and client_instance.is_connected:
-                 await client_instance.stop()
+                await client_instance.stop()
         LOGGER.info("Stopped clients before restart.")
     except Exception as e:
         LOGGER.error(f"Error stopping clients during restart: {e}")
@@ -937,7 +941,7 @@ async def main_menu_callback_admin(client, cb: CallbackQuery):
     await cb.answer()
     await update_user_conversation(cb.message.chat.id, None)
     await cb.message.edit_text(
-         "**👋 Welcome, Admin!**\n\nKeralaCaptain Download Worker control panel.",
+       "**👋 Welcome, Admin!**\n\nKeralaCaptain Download Worker control panel.",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("📊 Statistics", callback_data="admin_stats")],
             [InlineKeyboardButton("⚙️ Domain Setting", callback_data="admin_settings")],
@@ -990,6 +994,12 @@ async def ping_server():
                     LOGGER.info(f"Self-ping status: {resp.status}")
         except Exception as e:
             LOGGER.warning(f"Self-ping failed: {e}")
+
+async def web_server():
+    """Initializes the aiohttp web application."""
+    app = web.Application()
+    app.add_routes(routes)
+    return app
 
 if __name__ == "__main__":
     async def main_startup_shutdown_logic():
