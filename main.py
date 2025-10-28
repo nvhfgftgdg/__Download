@@ -668,11 +668,11 @@ async def download_handler(request: web.Request):
 
         try:
             async for chunk in body_generator:
-                # Check if client connection is still alive before writing
-                if resp.transport is None or resp.transport.is_closing():
-                     LOGGER.warning(f"Client connection closed prematurely for {message_id}. Stopping stream.")
-                     return resp # Stop sending
-
+                
+                # --- ✅ തിരുത്തിയ ഭാഗം (FIXED PART) ---
+                # ആ 'if resp.transport...' എന്ന 3 വരികൾ ഇവിടെ നിന്ന് നീക്കം ചെയ്തു
+                # The 3 'if resp.transport...' lines were removed from here
+                
                 if bytes_sent_in_current_request >= length:
                      LOGGER.debug(f"Finished sending range for {message_id}. Sent: {bytes_sent_in_current_request}, Requested length: {length}")
                      break # Stop if we've sent the requested number of bytes
@@ -683,10 +683,10 @@ async def download_handler(request: web.Request):
                      if len(chunk) > first_part_cut:
                          data_to_write = chunk[first_part_cut:]
                      else:
-                          # This chunk is smaller than the part we need to cut, skip it entirely? Log this.
-                          LOGGER.warning(f"First chunk for {message_id} smaller than cut offset. Skipping chunk.")
-                          is_first_chunk_yielded = False # Still mark as processed
-                          continue # Skip writing this chunk
+                         # This chunk is smaller than the part we need to cut, skip it entirely? Log this.
+                         LOGGER.warning(f"First chunk for {message_id} smaller than cut offset. Skipping chunk.")
+                         is_first_chunk_yielded = False # Still mark as processed
+                         continue # Skip writing this chunk
                      is_first_chunk_yielded = False
 
                 # Ensure we don't send more bytes than requested in the range
